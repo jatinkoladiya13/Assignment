@@ -3,12 +3,56 @@
     By defual, Django signals are executed synchronously.
     the same process and in the same call stack
 
+    from django.db.models.signals import post_save
+    from django.dispatch import receiver
+    from django.contrib.auth.models import User
+    import time
+
+    @receiver(post_save, sender=User)
+    def signal_handler(sender, instance, **kwargs):
+        print("singal started") 
+        time.sleep(3)
+        print("Signal handler triggered, task sent to queue")
+
+    start  = time.time()
+    User.objects.create(username="jatin koladiya")
+    end = time.time()
+    print("check the toatla time", end-start)    
+
+    when singal start to end geting 3 second between stop for 3 second. this is asynchronously and synchronously is continue working line by line.
+
 2: Do django signals run in the same thread as the caller?
 =>
    Yes, Django signals runs in the same thread as the caller.
    you get same thread  by threading.get_ident() and with user create threadtest.
 
+    from django.db.models.signals import post_save
+    from django.dispatch import receiver
+    from django.contrib.auth.models import User
+    import threading 
+
+    @receiver(post_save, sender=User)
+    def signal_handler(sender, instance, **kwargs):
+        print("signal thread:", threading.get_ident())
+    
+    print("check thread:",threading.get_ident())
+    User.objects.create(username="jatin koladiya")
+
 3. By default do django signals run in the same database transaction as the caller?
 => 
     Yes, signals run in the same database transaction unless you explicitly change behavior.
     you fisrt check except with user create the check with user is exists filter query these are same database transaction as the caller. 
+
+    from django.db.models.signals import post_save
+    from django.dispatch import receiver
+    from django.contrib.auth.models import User
+    import django.db import transaction
+
+    @receiver(post_save, sender=User)
+    def signal_handler(sender, instance, **kwargs):
+        def commit_aft():
+            print("transaction commit")
+
+        transaction.on_commit(commit_aft)     
+
+    User.objects.create(username="jatin koladiya")    
